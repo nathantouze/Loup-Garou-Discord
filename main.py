@@ -1,6 +1,10 @@
 from discord.ext.commands import Bot
 import config
 from loup_garou import Loup
+import time
+
+#Mentions: <@ID>
+
 
 bot = Bot(command_prefix="!")
 
@@ -9,6 +13,33 @@ LoupGarou = Loup()
 @bot.event
 async def on_ready():
     print("Bot connected !")
+
+
+def checkForNewGameMessage(reaction):
+    if reaction.message.content == config.newGameMessage and reaction.message.author.bot == True:
+        return True
+    else:
+        return False
+
+@bot.event
+async def on_reaction_add(reaction, user):
+    if checkForNewGameMessage(reaction) == True:
+        if reaction.count <= LoupGarou.maxPlayer:
+            LoupGarou.addPlayer(str(user), user.id)
+            print("{} ajouté !".format(user))
+            await bot.get_channel(719177371714060288).send("<@{}>".format(user.id))
+        else:
+            await reaction.remove(user)
+            print("Réaction retiré (trop de monde)")
+    else:
+        print("C'est pas le bon message !")
+
+@bot.event
+async def on_reaction_remove(reaction, user):
+    if checkForNewGameMessage(reaction) == True and reaction.count < config.maxPlayer:
+        LoupGarou.removePlayer(user.id)
+        print("{} retiré !".format(user))
+        
 
 @bot.command()
 async def ping(ctx):
@@ -30,15 +61,15 @@ async def servInfo(ctx):
 async def newGame(ctx):
     if LoupGarou.status == "Out":
         main_channel = bot.get_channel(719177371714060288)
-        await main_channel.send("**" + str(ctx.message.author) + "** a commencé une partie.\n" + \
-                                "Rejoignez la partie en écrivant \"!join\" ou invitez des joueurs en écrivant \"!invite [joueur]\"")
+        await main_channel.send(config.newGameMessage)
         LoupGarou.status = "Waiting for players"
-        print("{} started a game !".format(ctx.message.author))
+        LoupGarou.gameChief = ctx.message.author
+        print("{} a commencé une partie ! ".format(ctx.message.author))
     elif LoupGarou.status == "Waiting for players":
-        await ctx.send("Une partie est déjà en attente de joueurs.\nIl y a actuellement {}/{} joueurs dans la partie.\n".format(LoupGarou.nbPlayer, LoupGarou.maxPlayer)\
-                    + "Tu peux la rejoindre en écrivant \"!join\".")
+        await ctx.send("Une partie est déjà en attente de joueurs.\n")
     elif LoupGarou.status == "Playing":
         await ctx.send("La partie à déjà commencé...\nEssayes plus tard")
+
 
 @bot.command()
 async def invite(ctx, username):
@@ -49,31 +80,8 @@ async def invite(ctx, username):
     else:
         users = bot.users
         users = [user for user in users if str(user.name + "#" + user.discriminator) == username]
-        print("{} invited !".format(users[0]))
-        await users[0].send("Go jouer au Loup Garou sur Discord ! (**!join**)")
-
-@bot.command()
-async def join(ctx):
-    if LoupGarou.status == "Out":
-        await ctx.send("Aucune partie n'a été lancé\nPour commencer une partie envoyez \"!newGame\".")
-    elif LoupGarou.status == "Playing":
-        await ctx.send("Une partie est déjà en cours. Personne ne peut rejoindre")
-    else:
-        LoupGarou.addPlayer(str(ctx.author))
-        await ctx.send("Vous avez rejoint la partie.")
-        print(str(ctx.author) + " a rejoint la partie !")
-
-@bot.command()
-async def unjoin(ctx):
-    if LoupGarou.status == "Out":
-        await ctx.send("Aucune partie n'a été lancé\nPour commencer une partie envoyez \"!newGame\".")
-    elif LoupGarou.status == "Playing":
-        await ctx.send("Une partie est déjà en cours. Il n'y a plus de file d'attente")
-    else:
-        LoupGarou.removePlayer(str(ctx.author))
-        print(str(ctx.author) + " a quitté la file d'attente !")
-        await ctx.send("Vous avez quitté la partie !")
-
+        print("{} invité !".format(users[0]))
+        await users[0].send("Go jouer au Loup Garou sur Discord !")
 
 
 bot.run(config.token)
