@@ -46,18 +46,6 @@ async def ping(ctx):
     await ctx.send("pong !")
 
 @bot.command()
-async def servInfo(ctx):
-    if str(ctx.message.author).endswith("#1524"):
-        server = ctx.guild
-        numberOfTextChannels = len(server.text_channels)
-        numberOfVoiceChannels = len(server.voice_channels)
-        serverDescription = server.description
-        numberOfPerson = server.member_count
-        serverName = server.name
-        await ctx.send("Le server {} contient {} personnes.\nDescription: {}\nCe server possède {} channels textuels et {} channels vocaux.".format(serverName, numberOfPerson, serverDescription, numberOfTextChannels, numberOfVoiceChannels))
-
-
-@bot.command()
 async def newGame(ctx):
     if LoupGarou.status == "Out":
         main_channel = bot.get_channel(719177371714060288)
