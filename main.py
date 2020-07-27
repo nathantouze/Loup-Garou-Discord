@@ -1,6 +1,6 @@
 from discord.ext.commands import Bot
 import config
-from loup_garou import Loup
+from loup_garou import LoupGarou
 import time
 
 #Mentions: <@ID>
@@ -8,7 +8,7 @@ import time
 
 bot = Bot(command_prefix="!")
 
-LoupGarou = Loup()
+LoupGarou = LoupGarou()
 
 @bot.event
 async def on_ready():
@@ -25,21 +25,30 @@ def checkForNewGameMessage(reaction):
 async def on_reaction_add(reaction, user):
     if checkForNewGameMessage(reaction) == True:
         if reaction.count <= LoupGarou.maxPlayer:
-            LoupGarou.addPlayer(str(user), user.id)
-            print("{} ajouté !".format(user))
-            await bot.get_channel(719177371714060288).send("<@{}>".format(user.id))
+            if reaction.emoji.str == "✅":
+                if LoupGarou.addPlayer(user, user.id) is True:
+                    print("{} ajouté !".format(user))
+                else:
+                    print("Un bot a essayé de rejoindre la partie")
+            elif str(reaction.emoji) == "▶":
+                if user.bot == True and user.id == config.BotID:
+                    print("Boutton play initialisé")
+                elif user.id != LoupGarou.gameChief.id:
+                    reaction.remove(user)
+                    print("Réaction retiré (Un joueur random à essayé de lancer la partie)")
+                else:
+                    LoupGarou.startGame()
         else:
             await reaction.remove(user)
             print("Réaction retiré (trop de monde)")
     else:
-        print("C'est pas le bon message !")
+        print("Réaction ajouté sur une publication random")
 
 @bot.event
 async def on_reaction_remove(reaction, user):
     if checkForNewGameMessage(reaction) == True and reaction.count < config.maxPlayer:
         LoupGarou.removePlayer(user.id)
         print("{} retiré !".format(user))
-        
 
 @bot.command()
 async def ping(ctx):
@@ -49,7 +58,9 @@ async def ping(ctx):
 async def newGame(ctx):
     if LoupGarou.status == "Out":
         main_channel = bot.get_channel(719177371714060288)
-        await main_channel.send(config.newGameMessage)
+        message = await main_channel.send(config.newGameMessage)
+        await message.add_reaction('✅')
+        await message.add_reaction('▶')
         LoupGarou.status = "Waiting for players"
         LoupGarou.gameChief = ctx.message.author
         print("{} a commencé une partie ! ".format(ctx.message.author))
