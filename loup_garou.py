@@ -1,4 +1,6 @@
 import config
+import random
+import roles
 
 class LoupGarou:
     """Class qui défini une partie de Loup-Garou"""
@@ -13,8 +15,45 @@ class LoupGarou:
         return LoupGarou.__init__(self)
     
 
+    def checkGameInit(self, plan):
+        if plan != []:
+            return False
+        for player in self.Players:
+            if player["role"] is None:
+                return False
+        return True
+
     def startGame(self):
         self.status = "Playing"
+        construct_plan = list(config.roles_per_players[self.nbPlayer])
+        index = 0
+        print("entreing in while loop")
+        while self.checkGameInit(construct_plan) is False and index < self.nbPlayer:
+            role = random.choice(construct_plan)
+            print(role)
+            if role == "loup-garou":
+                self.Players[index]["role"] = roles.Loup()
+            elif role == "villageois":
+                print("lol")
+                self.Players[index]["role"] = roles.Villageois()
+            elif role == "voyante":
+                self.Players[index]["role"] = roles.Voyante()
+            elif role == "sorcière":
+                self.Players[index]["role"] = roles.Sorciere()
+            elif role == "cupidon":
+                self.Players[index]["role"] = roles.Cupidon()
+            elif role == "chasseur":
+                self.Players[index]["role"] = roles.Chasseur()
+            else:
+                print("passed here")
+                return False
+            construct_plan.remove(role)
+            index += 1
+            print("construct plan (after): ", construct_plan)
+            print("Players (after)       : ", self.Players)
+        print(self.Players)
+
+
         
 
 
@@ -33,7 +72,7 @@ class LoupGarou:
             return False
         if username.bot is True:
             return False
-        self.Players.append({"username":str(username), "id":id, "role":"undefined"})
+        self.Players.append({"username":str(username), "id":id, "role":None})
         self.nbPlayer = len(self.Players)
         return True
 

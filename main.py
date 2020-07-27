@@ -1,4 +1,5 @@
 from discord.ext.commands import Bot
+import discord.permissions
 import config
 from loup_garou import LoupGarou
 import time
@@ -10,10 +11,10 @@ bot = Bot(command_prefix="!")
 
 LoupGarou = LoupGarou()
 
-@bot.event
-async def on_ready():
-    print("Bot connected !")
-
+async def abortBot(ctx):
+    await ctx.send("Le bot à rencontré une erreur. Il quitte le serveur... (abort)")
+    print("Le bot à rencontré une erreur. Il quitte le serveur... (abort)")
+    await bot.close()
 
 def checkForNewGameMessage(reaction):
     if reaction.message.content == config.newGameMessage and reaction.message.author.bot == True:
@@ -21,26 +22,36 @@ def checkForNewGameMessage(reaction):
     else:
         return False
 
+async def newGameSystem(reaction, user):
+    if reaction.count <= LoupGarou.maxPlayer + 1:
+        if str(reaction.emoji) == "✅":
+            if LoupGarou.addPlayer(user, user.id) is True:
+                print("{} ajouté !".format(user))
+            else:
+                print("Un bot a essayé de rejoindre la partie")
+        elif str(reaction.emoji) == "▶":
+            if user.bot == True and user.id == config.BotID:
+                print("Boutton play initialisé")
+            elif user.id != LoupGarou.gameChief.id:
+                await reaction.remove(user)
+                print("Réaction retiré (Un joueur random à essayé de lancer la partie)")
+            else:
+                LoupGarou.startGame()
+    else:
+        await reaction.remove(user)
+        print("Réaction retiré (trop de monde)")
+
+
+@bot.event
+async def on_ready():
+    print("Bot connected !")
+
+
+
 @bot.event
 async def on_reaction_add(reaction, user):
     if checkForNewGameMessage(reaction) == True:
-        if reaction.count <= LoupGarou.maxPlayer + 1:
-            if str(reaction.emoji) == "✅":
-                if LoupGarou.addPlayer(user, user.id) is True:
-                    print("{} ajouté !".format(user))
-                else:
-                    print("Un bot a essayé de rejoindre la partie")
-            elif str(reaction.emoji) == "▶":
-                if user.bot == True and user.id == config.BotID:
-                    print("Boutton play initialisé")
-                elif user.id != LoupGarou.gameChief.id:
-                    await reaction.remove(user)
-                    print("Réaction retiré (Un joueur random à essayé de lancer la partie)")
-                else:
-                    LoupGarou.startGame()
-        else:
-            await reaction.remove(user)
-            print("Réaction retiré (trop de monde)")
+        await newGameSystem(reaction, user)
     else:
         print("Réaction ajouté sur une publication random")
 
@@ -51,7 +62,14 @@ async def on_reaction_remove(reaction, user):
             LoupGarou.removePlayer(user.id)
             print("{} retiré !".format(user))
 
+@bot.command()
+async def abort(ctx):
+    await abortBot(ctx)
 
+
+@bot.command()
+async def clear(ctx, amount=5):
+    await ctx.channel.purge(limit=amount)
 
 
 @bot.command()
