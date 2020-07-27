@@ -1,5 +1,3 @@
-import loup_garou
-
 class Role:
     def __init__(self):
         self.name = "undefined"

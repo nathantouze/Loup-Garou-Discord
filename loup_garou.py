@@ -4,15 +4,16 @@ import roles
 
 class LoupGarou:
     """Class qui défini une partie de Loup-Garou"""
-    def __init__(self):
-        self.maxPlayer = config.maxPlayer
+    def __init__(self, bot):
+        self.maxPlayer = config.max_player
         self.status = "Out"
         self.nbPlayer = 0
         self.Players = []
         self.gameChief = None
+        self.client = bot
 
     def reset(self):
-        return LoupGarou.__init__(self)
+        return LoupGarou.__init__(self, self.client)
     
 
     def checkGameInit(self, plan):
@@ -23,18 +24,16 @@ class LoupGarou:
                 return False
         return True
 
-    def startGame(self):
+    async def startGame(self):
         self.status = "Playing"
         construct_plan = list(config.roles_per_players[self.nbPlayer])
         index = 0
-        print("entreing in while loop")
         while self.checkGameInit(construct_plan) is False and index < self.nbPlayer:
             role = random.choice(construct_plan)
             print(role)
             if role == "loup-garou":
                 self.Players[index]["role"] = roles.Loup()
             elif role == "villageois":
-                print("lol")
                 self.Players[index]["role"] = roles.Villageois()
             elif role == "voyante":
                 self.Players[index]["role"] = roles.Voyante()
@@ -45,19 +44,12 @@ class LoupGarou:
             elif role == "chasseur":
                 self.Players[index]["role"] = roles.Chasseur()
             else:
-                print("passed here")
                 return False
+            await self.client.get_user(self.Players[index]["id"]).send("Tu es " + self.Players[index]["role"].name + "\n" + self.Players[index]["role"].description)
             construct_plan.remove(role)
             index += 1
-            print("construct plan (after): ", construct_plan)
-            print("Players (after)       : ", self.Players)
-        print(self.Players)
-
-
+        await self.client.get_channel(config.game_channel_id).send()
         
-
-
-
 
     def checkUsernames(self, username):
         for player in self.Players:
