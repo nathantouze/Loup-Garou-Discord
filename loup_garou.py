@@ -7,7 +7,7 @@ class LoupGarou:
     def __init__(self, bot):
         self.status = "Out"
         self.nbPlayer = 0
-        self.Players = []
+        self.players = []
         self.gameChief = None
         self.client = bot
 
@@ -18,7 +18,7 @@ class LoupGarou:
     def checkGameInit(self, plan):
         if plan != []:
             return False
-        for player in self.Players:
+        for player in self.players:
             if player["role"] is None:
                 return False
         return True
@@ -30,20 +30,20 @@ class LoupGarou:
         while self.checkGameInit(construct_plan) is False and index < self.nbPlayer:
             role = random.choice(construct_plan)
             if role == "loup-garou":
-                self.Players[index]["role"] = roles.Loup()
+                self.players[index]["role"] = roles.Loup()
             elif role == "villageois":
-                self.Players[index]["role"] = roles.Villageois()
+                self.players[index]["role"] = roles.Villageois()
             elif role == "voyante":
-                self.Players[index]["role"] = roles.Voyante()
+                self.players[index]["role"] = roles.Voyante()
             elif role == "sorcière":
-                self.Players[index]["role"] = roles.Sorciere()
+                self.players[index]["role"] = roles.Sorciere()
             elif role == "cupidon":
-                self.Players[index]["role"] = roles.Cupidon()
+                self.players[index]["role"] = roles.Cupidon()
             elif role == "chasseur":
-                self.Players[index]["role"] = roles.Chasseur()
+                self.players[index]["role"] = roles.Chasseur()
             else:
                 return False
-            await self.client.get_user(self.Players[index]["id"]).send("Tu es " + self.Players[index]["role"].name + "\n\n" + self.Players[index]["role"].description)
+            await self.client.get_user(self.players[index]["id"]).send("Tu es " + self.players[index]["role"].name + "\n\n" + self.players[index]["role"].description)
             construct_plan.remove(role)
             index += 1
 
@@ -56,15 +56,15 @@ class LoupGarou:
         """Renvois True si la partie est fini, False si elle ne l'est pas."""
         isWolf = False
         isVillager = False
-        for player in self.Players:
+        for player in self.players:
             if player["role"].name == "loup-garou" and player["role"].alive is True:
                 isWolf = True
             elif player["role"].name != "loup-garou" and player["role"].alive is True:
                 isVillager = True
-        return isWolf == isVillager
+        return isWolf != isVillager
 
     def checkUsernames(self, user):
-        for player in self.Players:
+        for player in self.players:
             if str(player["user"]) == str(user):
                 return False
         return True
@@ -72,43 +72,43 @@ class LoupGarou:
 
     def addPlayer(self, user, id):
         """Ajoute un joueur si il n'est pas encore dedans. Renvois False en cas d'erreur"""
-        if self.Players != [] and self.checkUsernames(user) is False:
+        if self.players != [] and self.checkUsernames(user) is False:
             return False
         if user.bot is True:
             return False
-        self.Players.append({"user":user, "id":id, "role":None})
-        self.nbPlayer = len(self.Players)
+        self.players.append({"user":user, "id":id, "role":None})
+        self.nbPlayer = len(self.players)
         return True
 
 
     def removePlayer(self, id):
         """Retire un joueur si il est dans la liste des joueurs. Renvois False en cas d'erreur"""
-        if self.Players == []:
+        if self.players == []:
             return False
-        self.Players = [player for player in self.Players if player["id"] != id]
-        if self.nbPlayer == len(self.Players):
+        self.players = [player for player in self.players if player["id"] != id]
+        if self.nbPlayer == len(self.players):
             return False
         else:
-            self.nbPlayer = len(self.Players)
+            self.nbPlayer = len(self.players)
             return True
 
     def getPlayerByName(self, name=str):
         """Recherche un joueur en fontion de son nom. Le nom doit être une string. Renvoit None si le nom n'est pas présent."""
-        for player in self.Players:
+        for player in self.players:
             if str(player["user"]) == name:
                 return player
         return None
 
     def getPlayerByID(self, id=int):
         """Recherche un joueur en fonction de son id. L'id doit être un int. Renvois None si l'id n'est pas présent."""
-        for player in self.Players:
+        for player in self.players:
             if player["id"] == id:
                 return player
         return None
 
     def getFirstPlayerByRole(self, role=str):
         """Recherche un joueur en fonction de son role. Le rôle doit être une string (ref. Roles.py). Renvois None si le rôle n'est pas présent."""
-        for player in self.Players:
+        for player in self.players:
             if player["role"].name == role:
                 return player
         return None
@@ -116,7 +116,7 @@ class LoupGarou:
     def getPlayersByRole(self, role=str):
         """Recherche tout les joueurs avec un role défini. Le rôle doit être une string (ref. Roles.py). Renvois une liste vide si le rôle n'est pas présent."""
         role_list = list()
-        for player in self.Players:
+        for player in self.players:
             if player["role"].name == role:
                 role_list.append(player)
         return role_list

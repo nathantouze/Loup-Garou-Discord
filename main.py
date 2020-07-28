@@ -2,6 +2,7 @@ from discord.ext import commands
 import discord
 import config
 from loup_garou import LoupGarou
+import random
 #Mentions: <@ID>
 
 
@@ -45,6 +46,48 @@ async def closeTheGame():
     data.game.reset()
 
 
+async def pickup_new_chief():
+    newChief = random.choice(data.game.players)
+    data.game.gameChief = newChief["user"]
+    await bot.get_channel(data.game_channel).send("Le nouveau chef de game est <@{}>.".format(newChief["user"].id))
+
+async def printResults():
+    isVillager = False
+    isWolf = False
+    isLover = False
+    congrats = str()
+
+    for player in data.game.players:
+        if player["role"].team == 1:
+            isVillager = True
+        elif player["role"].team == 2:
+            isWolf = True
+        elif player["role"].team == 3:
+            isLover = True
+        else:
+            closeTheGame()
+    if isWolf == isVillager and isLover is True:
+        await bot.get_channel(data.game_channel).send("Les amoureux remportent la victoire !")
+        return
+    if isWolf is True:
+        winner_list = [player for player in data.game.players if player["role"].name == "loup-garou"]
+        congrats = "Félicitation "
+        for player in winner_list:
+            congrats += "<@{}> ".format(player["id"])
+        await bot.get_channel(data.game_channel).send("Les loups remportent la victoire !\n" + congrats)
+    if isVillager is True:
+        winner_list = [player for player in data.game.players if player["role"].name != "loup-garou"]
+        congrats = "Félicitation "
+        for player in winner_list:
+            congrats += "<@{}> ".format(player["id"])
+        await bot.get_channel(data.game_channel).send("Les villageois remportent la victoire !\n" + congrats)
+    if isLover is True:
+        winner_list = [player for player in data.game.players if player["role"].team == 3]
+        congrats = "Félicitation "
+        for player in winner_list:
+            congrats += "<@{}> ".format(player["id"])
+        await bot.get_channel(data.game_channel).send("Les amoureux ont également remporté la victoire !\n" + congrats)
+
 
 def checkForNewGameMessage(reaction):
     if reaction.message.content == data.new_game_message and reaction.message.author.bot == True:
@@ -61,7 +104,7 @@ async def add_role_to_players():
     }
     game_channel = await server.create_text_channel('loup-garou', overwrites=overwrites)
     data.game_channel = game_channel.id 
-    for player in data.game.Players:
+    for player in data.game.players:
         await game_channel.set_permissions(player["user"], read_messages=True, send_messages=False)
     await game_channel.send("La partie commence !")
 
@@ -197,12 +240,11 @@ async def leave(ctx):
                 await abortBot(ctx)
                 return
             else:
-                if data.game.isOver() == False:
-                    await ctx.send("<@{}> à quitté. Il était {}.".format(player["id"], player["role"].name))
-                
-
-
-
+                await bot.get_channel(data.game_channel).send("<@{}> à quitté. Il était {}.".format(player["id"], player["role"].name))
+                if player["id"] == data.game.gameChief.id:
+                    await pickup_new_chief()
+                if data.game.isOver() == True:
+                    await printResults()
 
 
 
@@ -216,7 +258,7 @@ async def closeGame(ctx):
     if ctx.message.author.id == data.game.gameChief.id:
         await closeTheGame()
     else:
-        await ctx.send("Seul le chef de partie peut la fermer.")
+        await ctx.send("Seul le chef de game peut la fermer.")
         print("Quelqu'un a essayé de fermer une partie sans être l'hôte")
 
 @bot.command()
