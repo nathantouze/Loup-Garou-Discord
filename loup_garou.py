@@ -52,7 +52,7 @@ class LoupGarou:
         """Initialise la partie."""
         self.status = "Playing"
         await self.roleDistribution()
-        await self.client.get_channel(config.game_channel_id).send("La partie commence !")
+        await self.client.get_channel(config.game_channel).send("La partie commence !")
 
 
     def checkUsernames(self, user):
