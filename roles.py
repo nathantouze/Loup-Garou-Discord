@@ -5,6 +5,7 @@ class Role:
         self.description = "undefined"
         self.alive = True
 
+
 class Voyante(Role):
     def __init__(self):
         Role.__init__(self)
@@ -12,12 +13,14 @@ class Voyante(Role):
         self.team = 1
         self.description = "La voyante peut connaître l'identité d'une personne qu'elle désigne par nuit.\nEquipe: \"villageois\""
 
+
 class Villageois(Role):
     def __init__(self):
         Role.__init__(self)
         self.name = "villageois"
         self.team = 1
         self.description = "Le villageois se contente de dormir pendant la nuit. Son rôle est d'éliminer les loup-garou pendant le vote.\nEquipe: \"villageois\""
+
 
 class Loup(Role):
     def __init__(self):
@@ -29,6 +32,7 @@ Pour cela, une fois par nuit, les Loup désignent une personne à éliminer.\n\
 Un autre moyen pour eux d'éliminer les villageois est de convaincre les autres joueurs de voter avec vous.\n\
 Equipe: \"loups\""
 
+
 class Cupidon(Role):
     def __init__(self):
         Role.__init__(self)
@@ -38,6 +42,7 @@ class Cupidon(Role):
 Leur priorité sera de se sauver l'un l'autre. Si un des amoureux meurt, l'autre le suit.\n\
 Equipe: \"villageois\""
         self.Power = True
+
 
 class Sorciere(Role):
     def __init__(self):
@@ -50,6 +55,7 @@ Potion de mort: Tue une personne (1 utilisation).\n\
 Equipe: \"villageois\""
         self.LPotion = True
         self.DPotion = True
+
 
 class Chasseur(Role):
     def __init__(self):

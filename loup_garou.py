@@ -5,7 +5,6 @@ import roles
 class LoupGarou:
     """Class qui défini une partie de Loup-Garou"""
     def __init__(self, bot):
-        self.maxPlayer = config.max_player
         self.status = "Out"
         self.nbPlayer = 0
         self.Players = []
@@ -48,12 +47,21 @@ class LoupGarou:
             construct_plan.remove(role)
             index += 1
 
-    async def startGame(self):
+    async def startGame(self, game_channel):
         """Initialise la partie."""
         self.status = "Playing"
         await self.roleDistribution()
-        await self.client.get_channel(config.game_channel).send("La partie commence !")
 
+    def isOver(self):
+        """Renvois True si la partie est fini, False si elle ne l'est pas."""
+        isWolf = False
+        isVillager = False
+        for player in self.Players:
+            if player["role"].name == "loup-garou" and player["role"].alive is True:
+                isWolf = True
+            elif player["role"].name != "loup-garou" and player["role"].alive is True:
+                isVillager = True
+        return isWolf == isVillager
 
     def checkUsernames(self, user):
         for player in self.Players:
