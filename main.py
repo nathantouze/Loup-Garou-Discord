@@ -39,7 +39,8 @@ async def closeTheGame():
     game_channel = bot.get_channel(data.game_channel)
     poll_channel = bot.get_channel(data.poll_channel)
     await taniere_channel.purge()
-    await game_channel.delete(reason="Closing game")
+    if game_channel != None:
+        await game_channel.delete(reason="Closing game")
     await poll_channel.purge(check=isNewGameMessage)
     data.game.reset()
 
@@ -94,7 +95,10 @@ async def newGamePollSystem(reaction, user):
                 print("Boutton play initialisé")
             elif user.id != data.game.gameChief.id:
                 await reaction.remove(user)
-                print("Réaction retiré (Un joueur random à essayé de lancer la partie)")
+                print("Réaction retiré: un joueur random a essayé de lancer la partie")
+            elif user.id == data.game.gameChief.id and data.game.getPlayerByID(user.id) == None:
+                await reaction.remove(user)
+                print("Réaction retiré: le chef de game a voulu lancer la partie sans l'avoir rejoint.")
             else:
                 await data.game.startGame(data.game_channel)
                 await add_role_to_players()

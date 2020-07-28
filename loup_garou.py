@@ -102,7 +102,7 @@ class LoupGarou:
     def getPlayerByID(self, id=int):
         """Recherche un joueur en fonction de son id. L'id doit être un int. Renvois None si l'id n'est pas présent."""
         for player in self.Players:
-            if str(player["id"]) == id:
+            if player["id"] == id:
                 return player
         return None
 
