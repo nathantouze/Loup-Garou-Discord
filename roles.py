@@ -25,9 +25,9 @@ class Loup(Role):
         self.name = "loup-garou"
         self.team = 2
         self.description = "Les Loups-Garou ont pour but d'éliminer toutes l'équipe villageoise.\n\
-                            Pour cela, une fois par nuit, les Loup désignent une personne à éliminer.\n\
-                            Un autre moyen pour eux d'éliminer les villageois est de convaincre les autres joueurs de voter avec vous.\
-                            Equipe: \"loups\""
+Pour cela, une fois par nuit, les Loup désignent une personne à éliminer.\n\
+Un autre moyen pour eux d'éliminer les villageois est de convaincre les autres joueurs de voter avec vous.\n\
+Equipe: \"loups\""
 
 class Cupidon(Role):
     def __init__(self):
@@ -35,8 +35,8 @@ class Cupidon(Role):
         self.name = "cupidon"
         self.team = 1
         self.description = "Le cupidon désigne 2 personnes au début du jeu qui seront amoureux.\n\
-                            Leur priorité sera de se sauver l'un l'autre. Si un des amoureux meurt, l'autre le suit.\n\
-                            Equipe: \"villageois\""
+Leur priorité sera de se sauver l'un l'autre. Si un des amoureux meurt, l'autre le suit.\n\
+Equipe: \"villageois\""
         self.Power = True
 
 class Sorciere(Role):
@@ -45,9 +45,9 @@ class Sorciere(Role):
         self.name = "sorcière"
         self.team = 1
         self.description = "La sorcière a le choix, pendant la nuit, d'utiliser une potion de vie ou de mort sur un joueur.\n\
-                            Potion de vie: Sauve la vie de la personne désignée par les loups (1 utilisation).\n\
-                            Potion de mort: Tue une personne (1 utilisation).\n\
-                            Equipe: \"villageois\""
+Potion de vie: Sauve la vie de la personne désignée par les loups (1 utilisation).\n\
+Potion de mort: Tue une personne (1 utilisation).\n\
+Equipe: \"villageois\""
         self.LPotion = True
         self.DPotion = True
 
@@ -56,5 +56,4 @@ class Chasseur(Role):
         Role.__init__(self)
         self.name = "chasseur"
         self.team = 1
-        self.description = "Le chasseur désigne une personne lorsqu'il meurt. La personne désigné meurt à son tour.\n\
-                            Equipe: \"villageois\""
+        self.description = "Le chasseur désigne une personne lorsqu'il meurt. La personne désigné meurt à son tour.\nEquipe: \"villageois\""

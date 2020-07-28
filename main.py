@@ -6,12 +6,15 @@ from loup_garou import LoupGarou
 
 #Mentions: <@ID>
 
+
 bot = Bot(command_prefix="!")
 
 LoupGarou = LoupGarou(bot)
 
 async def abortBot(ctx):
     await ctx.send("Le bot à rencontré une erreur. Il quitte le serveur... (abort)")
+    taniere_channel = bot.get_guild(config.wolf_team_id).get_channel(config.wolf_team_channel_id)
+    await taniere_channel.purge()
     print("Le bot à rencontré une erreur. Il quitte le serveur... (abort)")
     await bot.close()
 
@@ -20,6 +23,18 @@ def checkForNewGameMessage(reaction):
         return True
     else:
         return False
+
+async def send_link_to_wolves():
+    """Envois une invitation à tout les loups-garou de la partie."""
+    wolves = LoupGarou.getPlayersByRole("loup-garou")
+    for wolf in wolves:
+        link = await bot.get_guild(config.wolf_team_id).get_channel(config.wolf_team_channel_id).create_invite(max_age=300)
+        await wolf["user"].send("Le lien du serveur dédié aux loup-garou: {}".format(link))
+
+async def setting_up_wolves_privacy():
+    taniere_channel = bot.get_guild(config.wolf_team_id).get_channel(config.wolf_team_channel_id)
+    await taniere_channel.send("Vous avez tous été désigné loup-garou.\nIci vous pourrez communiquer sans qu'un joueur adverse ne soit notifié de vos messages.\n")
+    await send_link_to_wolves()
 
 async def newGameSystem(reaction, user):
     if reaction.count <= LoupGarou.maxPlayer + 1:
@@ -36,9 +51,31 @@ async def newGameSystem(reaction, user):
                 print("Réaction retiré (Un joueur random à essayé de lancer la partie)")
             else:
                 await LoupGarou.startGame()
+                await setting_up_wolves_privacy()
     else:
         await reaction.remove(user)
         print("Réaction retiré (trop de monde)")
+
+
+
+async def setting_up_poll(ctx):
+    main_channel = bot.get_channel(719177371714060288)
+    message = await main_channel.send(config.new_game_message)
+    await message.add_reaction('✅')
+    await message.add_reaction('▶')
+    LoupGarou.status = "Waiting for players"
+    LoupGarou.gameChief = ctx.message.author
+    print("{} a commencé une partie ! ".format(ctx.message.author))
+
+
+
+async def global_reaction(reaction, user):
+    if checkForNewGameMessage(reaction) == True:
+        await newGameSystem(reaction, user)
+    else:
+        print("Réaction ajouté sur une publication random")
+
+
 
 
 @bot.event
@@ -49,10 +86,12 @@ async def on_ready():
 
 @bot.event
 async def on_reaction_add(reaction, user):
-    if checkForNewGameMessage(reaction) == True:
-        await newGameSystem(reaction, user)
+    guild_id = reaction.message.guild.id
+    if guild_id == config.wolf_team_id:
+        print("Réaction depuis le serveur des loups !")
     else:
-        print("Réaction ajouté sur une publication random")
+        print("Réaction depuis le serveur hôte !")
+        await global_reaction(reaction, user)
 
 @bot.event
 async def on_reaction_remove(reaction, user):
@@ -60,6 +99,8 @@ async def on_reaction_remove(reaction, user):
         if str(reaction.emoji) == "✅":
             LoupGarou.removePlayer(user.id)
             print("{} retiré !".format(user))
+
+
 
 @bot.command()
 async def abort(ctx):
@@ -72,19 +113,17 @@ async def clear(ctx, amount=5):
 
 
 @bot.command()
+async def guild(ctx):
+    await ctx.send("actual guild: " + ctx.guild.id)
+
+@bot.command()
 async def ping(ctx):
     await ctx.send("pong !")
 
 @bot.command()
 async def newGame(ctx):
     if LoupGarou.status == "Out":
-        main_channel = bot.get_channel(719177371714060288)
-        message = await main_channel.send(config.new_game_message)
-        await message.add_reaction('✅')
-        await message.add_reaction('▶')
-        LoupGarou.status = "Waiting for players"
-        LoupGarou.gameChief = ctx.message.author
-        print("{} a commencé une partie ! ".format(ctx.message.author))
+        await setting_up_poll(ctx)
     elif LoupGarou.status == "Waiting for players":
         await ctx.send("Une partie est déjà en attente de joueurs.\n")
     elif LoupGarou.status == "Playing":
