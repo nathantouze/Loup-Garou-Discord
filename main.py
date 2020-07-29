@@ -63,25 +63,35 @@ async def pickup_new_chief():
     data.game.gameChief = newChief["user"]
     await bot.get_channel(data.game_channel).send("Le nouveau chef de game est <@{}>.".format(newChief["user"].id))
 
-async def printResults():
+async def getResults():
     isVillager = False
     isWolf = False
     isLover = False
-    congrats = str()
 
     if data.game.players == []:
         await closeTheGame()
-        return
+        return isVillager, isWolf, isLover
     for player in data.game.players:
-        if player["role"].team == 1:
+        if player["role"].team == 1 and player["role"].alive is True:
             isVillager = True
-        elif player["role"].team == 2:
+        elif player["role"].team == 2 and player["role"].alive is True:
             isWolf = True
-        elif player["role"].team == 3:
+        elif player["role"].team == 3 and player["role"].alive is True:
             isLover = True
+        elif player["role"].alive is False:
+            continue
         else:
             await closeTheGame()
-            return
+            return isVillager, isWolf, isLover
+    return isVillager, isWolf, isLover
+
+async def printResults():
+    """Affiche les résultats de la partie."""
+    congrats = str()
+    isVillager, isWolf, isLover = await getResults()
+
+    if isVillager == False and isWolf is False and isLover is False:
+        return
     if isWolf == isVillager and isLover is True:
         await bot.get_channel(data.game_channel).send("Les amoureux remportent la victoire !")
         return
