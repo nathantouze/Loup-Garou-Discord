@@ -2,18 +2,19 @@ import config
 import random
 import roles
 
+
 class LoupGarou:
     """Class qui défini une partie de Loup-Garou"""
-    def __init__(self, bot):
+    def __init__(self):
         self.status = "Out"
         self.nbPlayer = 0
         self.players = []
         self.gameChief = None
-        self.client = bot
         self.invite = None
+        self.thread_game_loop = None
 
     def reset(self):
-        return LoupGarou.__init__(self, self.client)
+        return LoupGarou.__init__(self)
     
 
     def checkGameInit(self, plan):
@@ -24,7 +25,7 @@ class LoupGarou:
                 return False
         return True
 
-    async def roleDistribution(self):
+    def roleDistribution(self):
         """Distribue les rôles. Envois un message à tout les joueurs avec les explications correspondantes."""
         construct_plan = list(config.roles_per_players[self.nbPlayer])
         index = 0
@@ -44,25 +45,34 @@ class LoupGarou:
                 self.players[index]["role"] = roles.Chasseur()
             else:
                 return False
-            await self.client.get_user(self.players[index]["id"]).send("Tu es " + self.players[index]["role"].name + "\n\n" + self.players[index]["role"].description)
             construct_plan.remove(role)
             index += 1
 
-    async def startGame(self, game_channel):
+    def startGame(self, game_channel):
         """Initialise la partie."""
         self.status = "Playing"
-        await self.roleDistribution()
+        self.roleDistribution()
 
     def isOver(self):
         """Renvois True si la partie est fini, False si elle ne l'est pas."""
         isWolf = False
         isVillager = False
+        isLover = False
         for player in self.players:
             if player["role"].name == "loup-garou" and player["role"].alive is True:
                 isWolf = True
             elif player["role"].name != "loup-garou" and player["role"].alive is True:
                 isVillager = True
-        return isWolf != isVillager
+            elif player["role"].team == 3 and player["role"].alive is True:
+                isLover = True
+        if isWolf is True and isVillager is True and isLover is True and len(self.players) == 2: #check for lovers in different team end
+            return True
+        elif (isWolf is True and isVillager is False) or (isWolf is False and isVillager is True): #check for basic end
+            return True
+        elif isWolf is False and isLover is False and isVillager is False: #check for error
+            return True
+        else:
+            return False
 
     def checkUsernames(self, user):
         for player in self.players:
