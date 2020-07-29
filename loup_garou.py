@@ -10,6 +10,7 @@ class LoupGarou:
         self.players = []
         self.gameChief = None
         self.client = bot
+        self.invite = None
 
     def reset(self):
         return LoupGarou.__init__(self, self.client)

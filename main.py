@@ -10,8 +10,10 @@ class bot_data:
     def __init__(self, bot):
         self.game = LoupGarou(bot)
         self.game_channel = None
+        self.invite = None
         self.server = config.server
         self.server_wolf = config.wolf_team
+        self.server_wolf_owner = config.wolf_team_owner
         self.wolf_channel = config.wolf_team_channel
         self.poll_channel = config.poll_channel
         self.max_player = config.max_player
@@ -23,22 +25,29 @@ bot = commands.Bot(command_prefix="!")
 data = bot_data(bot)
 
 
-async def abortBot(ctx):
+async def abortBot(channel):
     """Stop le bot en nettoyant les serveurs"""
-    await ctx.send("Le bot à rencontré une erreur. Il quitte le serveur... (abort)")
-    taniere_channel = bot.get_guild(data.server_wolf).get_channel(data.wolf_channel)
-    await taniere_channel.purge()
-    print("Le bot à rencontré une erreur. Il quitte le serveur... (abort)")
+    await channel.send("Le bot quitte le serveur...")
+    await closeTheGame()
+    print("Le bot quitte le serveur...")
     await bot.close()
 
 def isNewGameMessage(message):
     return message.content == data.new_game_message and message.author.bot is True
 
 async def closeTheGame():
-    print("Fin de partie")
+    """Ferme la partie."""
     taniere_channel = bot.get_guild(data.server_wolf).get_channel(data.wolf_channel)
     game_channel = bot.get_channel(data.game_channel)
     poll_channel = bot.get_channel(data.poll_channel)
+    player_liste = [player["user"] for player in data.game.players]
+
+    print("Fin de partie")
+    for player in player_liste:
+        if player.id != data.server_wolf_owner:
+            await bot.get_guild(data.server_wolf).kick(player, reason="Fin de partie")
+    if data.game.invite != None:
+        await bot.delete_invite(data.game.invite)
     await taniere_channel.purge()
     if game_channel != None:
         await game_channel.delete(reason="Closing game")
@@ -66,6 +75,7 @@ async def printResults():
             isLover = True
         else:
             closeTheGame()
+            return
     if isWolf == isVillager and isLover is True:
         await bot.get_channel(data.game_channel).send("Les amoureux remportent la victoire !")
         return
@@ -114,8 +124,8 @@ async def send_link_to_wolves():
     """Envois une invitation à tout les loups-garou de la partie."""
     wolves = data.game.getPlayersByRole("loup-garou")
     for wolf in wolves:
-        link = await bot.get_guild(data.server_wolf).get_channel(data.wolf_channel).create_invite(max_age=300)
-        await wolf["user"].send("Le lien du serveur dédié aux loup-garou: {}".format(link))
+        data.game.invite = await bot.get_guild(data.server_wolf).get_channel(data.wolf_channel).create_invite(max_age=300)
+        await wolf["user"].send("Le lien du serveur dédié aux loup-garou: {}".format(data.game.invite))
 
 
 async def setting_up_wolves_privacy():
@@ -125,27 +135,35 @@ async def setting_up_wolves_privacy():
     await send_link_to_wolves()
 
 
+async def startGameRequest(reaction, user):
+    if user.bot == True and user.id == config.bot_id:
+        print("Boutton play initialisé")
+    elif user.id != data.game.gameChief.id:
+        await reaction.remove(user)
+        print("Réaction retiré: un joueur random a essayé de lancer la partie")
+    elif user.id == data.game.gameChief.id and data.game.getPlayerByID(user.id) == None:
+        await reaction.remove(user)
+        print("Réaction retiré: le chef de game a voulu lancer la partie sans l'avoir rejoint.")
+    else:
+        await data.game.startGame(data.game_channel)
+        await add_role_to_players()
+        await setting_up_wolves_privacy()
+
+def addPlayerRequest(reaction, user):
+    if user.bot is True:
+        print("Un bot a essayé de rejoindre la partie")
+    elif data.game.addPlayer(user, user.id) is True:
+        print("{} ajouté !".format(user))
+    else:
+        print("Erreur pendant l'ajout d'un joueur")
+
 async def newGamePollSystem(reaction, user):
     """Système de vote pour rejoindre une partie."""
     if reaction.count <= data.max_player + 1:
         if str(reaction.emoji) == "✅":
-            if data.game.addPlayer(user, user.id) is True:
-                print("{} ajouté !".format(user))
-            else:
-                print("Un bot a essayé de rejoindre la partie")
+            addPlayerRequest(reaction, user)
         elif str(reaction.emoji) == "▶":
-            if user.bot == True and user.id == config.bot_id:
-                print("Boutton play initialisé")
-            elif user.id != data.game.gameChief.id:
-                await reaction.remove(user)
-                print("Réaction retiré: un joueur random a essayé de lancer la partie")
-            elif user.id == data.game.gameChief.id and data.game.getPlayerByID(user.id) == None:
-                await reaction.remove(user)
-                print("Réaction retiré: le chef de game a voulu lancer la partie sans l'avoir rejoint.")
-            else:
-                await data.game.startGame(data.game_channel)
-                await add_role_to_players()
-                await setting_up_wolves_privacy()
+            await startGameRequest(reaction, user)
     else:
         await reaction.remove(user)
         print("Réaction retiré (trop de monde)")
@@ -191,19 +209,21 @@ async def on_reaction_add(reaction, user):
 @bot.event
 async def on_reaction_remove(reaction, user):
     if checkForNewGameMessage(reaction) == True and reaction.count < data.max_player + 1:
-        if str(reaction.emoji) == "✅":
+        if str(reaction.emoji) == "✅" and user.bot is False:
             data.game.removePlayer(user.id)
             print("{} retiré !".format(user))
 
 
 
 @bot.command()
-async def abort(ctx):
+@commands.has_permissions(administrator=True)
+async def exit(ctx):
     await abortBot(ctx)
 
 
 @bot.command()
-async def clear(ctx, amount=5):
+@commands.has_permissions(administrator=True)
+async def clear(ctx, amount=100):
     await ctx.channel.purge(limit=amount)
 
 
@@ -217,6 +237,7 @@ async def ping(ctx):
 
 @bot.command()
 async def newGame(ctx):
+    """Commence le poll pour rejoindre."""
     if data.game.status == "Out":
         await setting_up_poll_new_game(ctx)
     elif data.game.status == "Waiting for players":
@@ -227,30 +248,30 @@ async def newGame(ctx):
 
 @bot.command()
 async def leave(ctx):
+    """Fait quitter le joueur si il est présent dans la partie."""
     if data.game.status != 'Playing':
         await ctx.send("Vous ne pouvez pas quitter une partie qui n'a pas commencé.")
-    else:
-        player = data.game.getPlayerByID(ctx.message.author.id)
-        if player == None:
-            await ctx.send("Vous ne faite pas partie de la partie en cours. Impossible de la quitter.")
-            return
-        else:
-            ret_rm = data.game.removePlayer(player["id"])
-            if ret_rm is False:
-                await abortBot(ctx)
-                return
-            else:
-                await bot.get_channel(data.game_channel).send("<@{}> à quitté. Il était {}.".format(player["id"], player["role"].name))
-                if player["id"] == data.game.gameChief.id:
-                    await pickup_new_chief()
-                if data.game.isOver() == True:
-                    await printResults()
-
+        return
+    player = data.game.getPlayerByID(ctx.message.author.id)
+    if player == None:
+        await ctx.send("Vous ne faite pas partie de la partie en cours. Impossible de la quitter.")
+        return
+    ret_rm = data.game.removePlayer(player["id"])
+    if ret_rm is False:
+        await bot.get_channel(data.poll_channel).send("Le bot a rencontré un erreur pendant la partie")
+        await abortBot(bot.get_channel(data.poll_channel))
+        return
+    await bot.get_channel(data.game_channel).send("<@{}> à quitté. Il était {}.".format(player["id"], player["role"].name))
+    if player["id"] == data.game.gameChief.id:
+        await pickup_new_chief()
+    if data.game.isOver() == True:
+        await printResults()
 
 
 
 @bot.command()
 async def closeGame(ctx):
+    """Ferme la partie. Seul le chef de game peut la fermer."""
     if data.game.gameChief == None:
         await ctx.send("Aucune partie en cours...\nTu peux en lancer une en écrivant !newGame")
         print("Quelqu'un a essayé de fermer une partie inexistante")
@@ -263,6 +284,7 @@ async def closeGame(ctx):
 
 @bot.command()
 async def invite(ctx, username):
+    """Invite un joueur en DM."""
     if data.game.status == "Out":
         await ctx.send("Aucune partie n'a été lancé, ça ne sert à rien d'inviter quelqu'un.\nPour commencer une partie envoyez \"!newGame\".")
     elif (data.game.status == "Playing"):
