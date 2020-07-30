@@ -1,28 +1,13 @@
 from discord.ext import commands
 import discord
 import config
-from game_data import LPData
+from app_data import appData
 import random
 #Mentions: <@ID>
 
-
-class bot_data:
-    def __init__(self):
-        self.game = LPData()
-        self.game_channel = None
-        self.invite = None
-        self.server = config.server
-        self.server_wolf = config.wolf_team
-        self.server_wolf_owner = config.wolf_team_owner
-        self.wolf_channel = config.wolf_team_channel
-        self.poll_channel = config.poll_channel
-        self.max_player = config.max_player
-        self.new_game_message = config.new_game_message
-
-
 bot = commands.Bot(command_prefix="!")
 
-data = bot_data()
+data = appData()
 
 
 async def abortBot(channel):
@@ -124,7 +109,7 @@ def checkForNewGameMessage(reaction):
 
 async def reveal_roles(game_channel):
     for player in data.game.players:
-        await game_channel.send("<@{}> est {}.".format(player["user"], player["role"].name))
+        await game_channel.send("<@{}> est {}.".format(player["id"], player["role"].name))
 
 
 async def add_role_to_players():
