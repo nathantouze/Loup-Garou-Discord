@@ -1,14 +1,14 @@
 from discord.ext import commands
 import discord
 import config
-from loup_garou import LoupGarou
+from game_data import LPData
 import random
 #Mentions: <@ID>
 
 
 class bot_data:
     def __init__(self):
-        self.game = LoupGarou()
+        self.game = LPData()
         self.game_channel = None
         self.invite = None
         self.server = config.server
@@ -181,7 +181,10 @@ async def startGameRequest(reaction, user):
 def addPlayerRequest(reaction, user):
     #if user.bot is True:
     #    return
-    data.game.addPlayer(user, user.id)
+    if user.bot is True and user.id == config.bot_id:
+        pass
+    else:
+        data.game.addPlayer(user, user.id)
 
 async def newGamePollSystem(reaction, user):
     """Système de vote pour rejoindre une partie."""

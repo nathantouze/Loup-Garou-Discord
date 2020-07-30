@@ -3,7 +3,7 @@ import random
 import roles
 
 
-class LoupGarou:
+class LPData:
     """Class qui défini une partie de Loup-Garou"""
     def __init__(self):
         self.status = "Out"
@@ -11,10 +11,9 @@ class LoupGarou:
         self.players = []
         self.gameChief = None
         self.invite = None
-        self.thread_game_loop = None
 
     def reset(self):
-        return LoupGarou.__init__(self)
+        return LPData.__init__(self)
     
 
     def checkGameInit(self, plan):
