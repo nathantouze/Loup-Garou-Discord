@@ -85,8 +85,8 @@ class LoupGarou:
         """Ajoute un joueur si il n'est pas encore dedans. Renvois False en cas d'erreur"""
         if self.players != [] and self.checkUsernames(user) is False:
             return False
-        if user.bot is True:
-            return False
+        #if user.bot is True:
+        #    return False
         self.players.append({"user":user, "id":id, "role":None})
         self.nbPlayer = len(self.players)
         return True

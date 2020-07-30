@@ -44,7 +44,7 @@ async def closeTheGame():
 
     print("Fin de partie")
     for player in player_liste:
-        if player.id != data.server_wolf_owner:
+        if player.id != data.server_wolf_owner and player.bot is False:
             await bot.get_guild(data.server_wolf).kick(player, reason="Fin de partie")
     if data.game.invite != None:
         await bot.delete_invite(data.game.invite)
@@ -122,6 +122,11 @@ def checkForNewGameMessage(reaction):
         return False
 
 
+async def reveal_roles(game_channel):
+    for player in data.game.players:
+        await game_channel.send("<@{}> est {}.".format(player["user"], player["role"].name))
+
+
 async def add_role_to_players():
     server = bot.get_guild(data.server)
     overwrites = {
@@ -133,7 +138,7 @@ async def add_role_to_players():
     for player in data.game.players:
         await game_channel.set_permissions(player["user"], read_messages=True, send_messages=False)
     await game_channel.send("La partie commence !")
-
+    await reveal_roles(game_channel)
 
 
 async def send_link_to_wolves():
@@ -141,7 +146,8 @@ async def send_link_to_wolves():
     wolves = data.game.getPlayersByRole("loup-garou")
     for wolf in wolves:
         data.game.invite = await bot.get_guild(data.server_wolf).get_channel(data.wolf_channel).create_invite(max_age=300)
-        await wolf["user"].send("Le lien du serveur dédié aux loup-garou: {}".format(data.game.invite))
+        if wolf["user"].bot is False:
+            await wolf["user"].send("Le lien du serveur dédié aux loup-garou: {}".format(data.game.invite))
 
 
 async def setting_up_wolves_privacy():
@@ -153,7 +159,8 @@ async def setting_up_wolves_privacy():
 
 async def tellRoleToPlayers():
     for player in data.game.players:
-        await player["user"].send("Tu es " + player["role"].name + ".\n\n" + player["role"].description)
+        if player["user"].bot is False:
+            await player["user"].send("Tu es " + player["role"].name + ".\n\n" + player["role"].description)
 
 async def startGameRequest(reaction, user):
     if user.bot == True and user.id == config.bot_id:
@@ -170,9 +177,10 @@ async def startGameRequest(reaction, user):
         await add_role_to_players()
         await setting_up_wolves_privacy()
 
+
 def addPlayerRequest(reaction, user):
-    if user.bot is True:
-        return
+    #if user.bot is True:
+    #    return
     data.game.addPlayer(user, user.id)
 
 async def newGamePollSystem(reaction, user):
